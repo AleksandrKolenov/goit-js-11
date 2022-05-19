@@ -2,7 +2,6 @@
   "name": "goit-js-11",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
   "scripts": {
     "dev": "parcel src/*.html",
     "build": "parcel build src/*.html --public-url /goit-js-11/"
@@ -19,9 +18,14 @@
   },
   "homepage": "https://github.com/AleksandrKolenov/goit-js-11#readme",
   "devDependencies": {
-    "parcel": "^2.5.0"
+    "buffer": "^6.0.3",
+    "parcel": "^2.5.0",
+    "parcel-plugin-nuke-dist": "^1.0.1",
+    "process": "^0.11.10"
   },
   "dependencies": {
+    "axios": "^0.27.2",
+    "notiflix": "^3.2.5",
     "simplelightbox": "^2.10.3"
   }
 }

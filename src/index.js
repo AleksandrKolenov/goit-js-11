@@ -1,39 +1,65 @@
+import API from './js/api.function';
 import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
+import { Notify } from 'notiflix';
 
 
 const form = document.querySelector('.search-form');
 const gallery = document.querySelector('.gallery');
 const button = document.querySelector('.load-more');
+const dataJson = new API();
+
 
 form.addEventListener('submit', onSubmit);
+button.addEventListener('click', onLoadMore)
 
-const URL = 'https://pixabay.com/api/';
-const KEY = '27271391-ec9e700146a6d73283b9a81ee';
+button.setAttribute('disabled', true);
 
-const searchParams = new URLSearchParams({
-  image_type: 'photo',
-  orientation: 'horizontal',
-  safesearch: 'true',
-  page: 1,
-  per_page: 5,	
-});
+const lightbox = new SimpleLightbox('.gallery a', { loop: true, enableKeyboard: true, docClose: true }); 
 
+function getFetch() {
+  dataJson.onFetch() 
+  // .then(console.log)
+  .then(renderMarcup)
+  .then(onRender)
+}
 
 function onSubmit(e) {
   e.preventDefault();
-  const inp = e.currentTarget.elements.searchQuery.value;
-  return fetch(`${URL}?key=${KEY}&q=${inp}&${searchParams}`)
-  .then(r => r.json())
-    .then(data=>data.hits)
-    .then(renderMarcup)
+  button.removeAttribute('disabled');
+  dataJson.query = e.currentTarget.elements.searchQuery.value;
+  if (dataJson.query=== ''){
+    button.setAttribute('disabled', true);
+    return Notify.warning('Please enter your request');
+  }
+
+  onClear();
+  dataJson.resetPage();
+  
+  try {
+    dataJson.onFetch()
+      .then((object) =>{
+      checkResponse(object)
+      })
     .then(onRender)
+  } catch {
+    onError();
+  }
 };
 
+function checkResponse(object) {
+  if (Object.total === 0) {
+    button.setAttribute('disabled', true);
+  return  Notify.failure('Sorry, there are no images matching your search query. Please try again.')
+  }
+  button.removeAttribute('disabled')
+  Notify.seccuss('Hooray! We found ${object.totalHits} images');
+}
 
 function renderMarcup(marcup) {
-  return marcup.map(({ webformatURL, largeImageURL, tags, likes, views, comments, downloads }) => {
-    return `<div class="photo-card">
+  return marcup.hits.map(({ webformatURL, largeImageURL, tags, likes, views, comments, downloads }) => {
+    return `<a class='gallery_item' href='${largeImageURL}'>
+    <div class="photo-card">
   <img src="${webformatURL}" alt="${tags}" loading="lazy" />
   <div class="info">
     <p class="info-item">
@@ -49,10 +75,25 @@ function renderMarcup(marcup) {
       <b>Downloads</${downloads}
     </p>
   </div>
-</div>`
+</div>
+</a>`
   }).join('');
 };
 
 function onRender(cart) {
   gallery.insertAdjacentHTML('beforeend', cart);
+lightbox.refresh()
 }
+
+function onClear() {
+  gallery.innerHTML = '';
+}
+
+function onLoadMore() {
+  getFetch();
+}
+
+function onError() {
+  // button.setAttribute('disabled', true);
+ return Notify.failure('Ooops, that went wrong. Please try again later')
+};
