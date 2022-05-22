@@ -21,6 +21,7 @@ export default class ApiService{
     constructor() {
       this.searchQuery = '';
       this.page = 1;
+      this.per_page = 40;
     }
     onFetch() {
 return axios.get(URL, {
@@ -31,7 +32,7 @@ return axios.get(URL, {
              orientation: 'horizontal',
              safesearch: 'true',
               page: this.page,
-             per_page: 4,
+             per_page: this.per_page,
         
             }
           })

@@ -17,21 +17,30 @@ button.setAttribute('disabled', true);
 
 const lightbox = new SimpleLightbox('.gallery a', { loop: true, enableKeyboard: true, docClose: true }); 
 
-function getFetch() {
-  dataJson.onFetch() 
+ async function getFetch() {
+  const parseData = await dataJson.onFetch() 
   // .then(console.log)
-  .then(renderMarcup)
-  .then(onRender)
+  const markUp = await renderMarcup(parseData)
+   const render = await onRender(markUp)
+   return render;
 }
 
-function onSubmit(e) {
+ function onSubmit(e) {
   e.preventDefault();
   button.removeAttribute('disabled');
-  dataJson.query = e.currentTarget.elements.searchQuery.value;
+  dataJson.query = e.currentTarget.elements.searchQuery.value.trim();
   if (dataJson.query=== ''){
     button.setAttribute('disabled', true);
     return Notify.warning('Please enter your request');
-  }
+    checkEndOfResult(object);
+   }
+   
+  function checkEndOfResult(object) {
+     if (object.hits.length < dataJson.per_page) {
+       button.setAttribute('disabled', true);
+       return Notify.info("We're sorry, but you've reached the end of search results.");
+     }
+   }
 
   onClear();
   dataJson.resetPage();
@@ -39,7 +48,8 @@ function onSubmit(e) {
   try {
     dataJson.onFetch()
       .then((object) =>{
-      checkResponse(object)
+        checkResponse(object);
+        return renderMarcup(object);
       })
     .then(onRender)
   } catch {
@@ -48,13 +58,21 @@ function onSubmit(e) {
 };
 
 function checkResponse(object) {
-  if (Object.total === 0) {
+  if (object.total === 0) {
     button.setAttribute('disabled', true);
   return  Notify.failure('Sorry, there are no images matching your search query. Please try again.')
   }
-  button.removeAttribute('disabled')
-  Notify.seccuss('Hooray! We found ${object.totalHits} images');
+  button.removeAttribute('disabled');
+  Notify.success(`Hooray! We found ${object.totalHits} images`);
+  checkEndOfResult(object);
 }
+
+function checkEndOfResult(object) {
+     if (object.hits.length < dataJson.per_page) {
+       button.setAttribute('disabled', true);
+       return Notify.info("We're sorry, but you've reached the end of search results.");
+     }
+   }
 
 function renderMarcup(marcup) {
   return marcup.hits.map(({ webformatURL, largeImageURL, tags, likes, views, comments, downloads }) => {
@@ -90,10 +108,15 @@ function onClear() {
 }
 
 function onLoadMore() {
-  getFetch();
+   dataJson.onFetch()
+      .then((object) =>{
+        checkEndOfResult(object);
+        return renderMarcup(object);
+      })
+    .then(onRender)
 }
 
 function onError() {
-  // button.setAttribute('disabled', true);
+  button.setAttribute('disabled', true);
  return Notify.failure('Ooops, that went wrong. Please try again later')
 };
